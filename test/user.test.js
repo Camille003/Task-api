@@ -8,6 +8,9 @@ const {userOne,userOneId,setUpDatabase} = require("./fixtures/db")
 
 beforeEach(setUpDatabase)
 
+
+
+//Create
 test("Should sign up user",async()=>{
     const response = await request(app).post("/users").send({name : 'camille',email:'camille03@gmail.com',password:'123456789'}).expect(201);
 
@@ -24,8 +27,18 @@ test("Should sign up user",async()=>{
            email :'camille03@gmail.com'
        }
    })
-   
+      
 }) 
+
+test("Should not sign up user with invalid credentials",async()=>{
+    await request(app)
+            .post("/users")
+            .send({name : 'Mike',email : 'mike@gmail.com', password : '1'})
+            .expect(400);
+})
+
+
+
 
 test("Should login user",async()=>{
     const response = await request(app).post("/users/login").send({
@@ -47,6 +60,8 @@ test("Should not login the user",async()=>{
     }).expect(400);
 })
 
+
+//Read
 test("Should fetch profile of user" ,async ()=>{
     await request(app)
           .get("/users/me")
@@ -62,24 +77,8 @@ test("Should not get Profile for unauthenticated User",async()=>{
           .expect(401)
 })
 
-test("Should delete account for user",async()=>{
-   const response =  await request(app)
-         .delete("/users/me")
-         .set('Authorization',`Bearer ${userOne.tokens[0].token}`)
-         .send()
-         .expect(200)
-    const user = await User.findById(userOneId);
 
-    expect(user).toBeNull()
-})
-
-test('Should not delete account for unauthorized user',async ()=>{
-    await request(app)
-            .delete("/users/me")
-            .send()
-            .expect(401)
-})
-
+//Upload
 test("Should upload avatar image",async()=>{
     await request(app)
           .post("/users/me/avatar")
@@ -92,6 +91,8 @@ test("Should upload avatar image",async()=>{
     expect(user.avatar).toEqual(expect.any(Buffer))
 })
 
+
+//Update
 test("Should update appropriate user fields if user is auhenticated",async ()=>{
 
    const response = await request(app)
@@ -113,3 +114,53 @@ test("Should not update any field if inappropriate fields are set",async()=>{
             .send({figures : 'Cool'})
             .expect(400)
 })
+
+test("Should not update user if unauthenticated",async ()=>{
+    await request(app)
+            .patch("/users/me")
+            .send({name : 'James Bond', email : 'bond@gmail.com'})
+            .expect(401)
+})
+
+test("Should not update user with invalid name/email/password",async()=>{
+    await request(app)
+            .patch('/users/me')
+            .set('Authorization',`Bearer ${userOne.tokens[0].token}`)
+            .send({
+                name : 'James Bond',
+                email : 'noood'
+            })
+            .expect(400)
+})
+
+
+//Delete
+
+test("Should delete account for user",async()=>{
+    const response =  await request(app)
+          .delete("/users/me")
+          .set('Authorization',`Bearer ${userOne.tokens[0].token}`)
+          .send()
+          .expect(200)
+     const user = await User.findById(userOneId);
+ 
+     expect(user).toBeNull()
+ })
+ 
+ test('Should not delete account for unauthorized user',async ()=>{
+     await request(app)
+             .delete("/users/me")
+             .send()
+             .expect(401)
+ })
+ 
+ 
+ test("Should not delete user if unauthenticated",async()=>{
+     await request(app)
+             .delete("/users/me")
+             .send()
+             .expect(401);
+     const user = await User.findById(userOneId);
+     expect(user).not.toBeNull()
+ })
+ 
