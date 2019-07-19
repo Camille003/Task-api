@@ -24,6 +24,8 @@ test("Should create task for users", async ()=>{
                                 description : 'From my test'
                             })
                             .expect(201);
+   
+
    const task = await Task.findById(response.body._id);
    expect(task).not.toBeNull();
     
@@ -37,6 +39,19 @@ test("Should not create task with invalid description/completed",async()=>{
                 description : '',
                 completed : 2
             }).expect(400)
+})
+
+
+test("should upload picture for task",async()=>{
+    const response = await request(app)
+                            .post(`/tasks/${task1._id}/picture`)
+                            .set('Authorization',`Bearer ${userOne.tokens[0].token}`)
+                            .send()
+                            .attach('picture','test/fixtures/philly.jpg')
+                            .expect(200)
+    const task = await Task.findById(task1._id)
+    expect(task.picture).toEqual(expect.any(Buffer))
+                      
 })
 
 //Read

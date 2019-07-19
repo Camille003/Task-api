@@ -2,6 +2,29 @@ const express = require('express')
 const Task = require('../models/task')
 const auth = require('../middleware/auth')
 const router = new express.Router()
+const multer = require("multer");
+const sharp = require('sharp')
+
+
+const uploads = multer({
+    limits : {
+        fileSize : 3000000
+    },
+    fileFilter (req,file,cb){
+        
+        const allowedFormats = ['jpg','jpeg','png','gif']
+        const extension = file.originalname.split(".")[1];
+
+        
+
+        if(!allowedFormats.includes(extension)){
+            console.log('File not supported');
+            return cb(new Error("File format not accepted"))
+        }
+        
+        cb(undefined,true)
+    }
+})
 
 router.post('/tasks', auth, async (req, res) => {
     const task = new Task({
@@ -15,6 +38,33 @@ router.post('/tasks', auth, async (req, res) => {
     } catch (e) {
         res.status(400).send(e)
     }
+})
+
+router.post("/tasks/:id/picture",
+auth,
+uploads.single('picture'),
+async (req,res,next)=>{
+    if(!req.params.id){
+        return res.status(400).json()
+    }
+    const task = await Task.findById(req.params.id)
+    if(!task){
+        return res.status(400).json()
+    }
+
+    
+    const file = await sharp(req.file.buffer).resize({width:500,height:500}).png().toBuffer()
+    
+
+    task.picture = file;
+    await task.save()
+    
+
+    return res.status(200).json(task)
+    
+
+},(error,req,res,next)=>{
+    return res.status(400).json(error)
 })
 
 // GET /tasks?completed=true
